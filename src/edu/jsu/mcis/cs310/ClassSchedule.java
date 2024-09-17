@@ -34,7 +34,43 @@ public class ClassSchedule {
     
     public String convertCsvToJsonString(List<String[]> csv) {
         
-        return ""; // remove this!
+        JsonObject jsonMain = new JsonObject();
+        JsonArray array1 = new JsonArray();
+        
+        // iterator initialization + skip header row
+        Iterator<String[]> iterator = csv.iterator();
+        if (iterator.hasNext()){
+            iterator.next();
+        }
+        
+        // Iterating through rest of the rows
+        while(iterator.hasNext()){
+            String[] row = iterator.next();
+            JsonObject portion = new JsonObject();
+            
+            portion.put("crn", row[0]);
+            portion.put("subject", row[1]);
+            portion.put("num", row[2]);
+            portion.put("description", row[3]);
+            portion.put("section", row[4]);
+            portion.put("type", row[5]);
+            portion.put("credits", row[6]);
+            portion.put("start", row[7]);
+            portion.put("end", row[8]);
+            portion.put("days", row[9]);
+            portion.put("where", row[10]);
+            portion.put("schedule", row[11]);
+            portion.put("instructor", row[12]);
+            portion.put("subjectid", row[13]);
+            
+            array1.add(portion);
+            
+        }
+        
+        jsonMain.put("section", array1);
+        
+        
+        return Jsoner.serialize(jsonMain); // remove this!
         
     }
     
