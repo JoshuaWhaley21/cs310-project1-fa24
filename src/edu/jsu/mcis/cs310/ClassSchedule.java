@@ -62,7 +62,7 @@ public class ClassSchedule {
         JsonObject courseMap = new JsonObject();        // For course details
         
         // Array for sections
-        JsonObject sectionObject = new JsonObject();
+        JsonArray sectionArray = new JsonArray();
         JsonArray instructorArray = new JsonArray();
         
         // Skip header and process each row
@@ -76,6 +76,7 @@ public class ClassSchedule {
                 String schedule = row[schedule_index]; // 12
                 String instructor = row[instructor_index];
                 int crn = Integer.parseInt(row[crn_index]);
+                
             
                 // Split subject and num
                 String[] subjectAndNum = num.trim().split(" ");
@@ -113,8 +114,11 @@ public class ClassSchedule {
             
             
                 // Create a section JSON object
-                if(!sectionObject.containsKey(crn)){
-                    
+                // For toring individual sections based of CRN, has to loop repetitively 
+                
+                JsonObject sectionObject = new JsonObject();
+                
+                // each of these in section object then section object to section array
                 sectionObject.put(CRN_COL_HEADER, crn);
                 sectionObject.put(SUBJECTID_COL_HEADER, subjectid.trim());
                 sectionObject.put(NUM_COL_HEADER, numValue.trim());
@@ -125,18 +129,22 @@ public class ClassSchedule {
                 sectionObject.put(DAYS_COL_HEADER, row[days_index].trim());
                 sectionObject.put(WHERE_COL_HEADER, row[where_index].trim());
                 
-                // contain instructor in individual crn/ section object
-                instructorArray.add(instructor);
+                instructorArray.add(instructor.split(","));
                 sectionObject.put(INSTRUCTOR_COL_HEADER, instructorArray);
+
                 
-                }
+                //sectionArray.add(INSTRUCTOR_COL_HEADER, instructor.trim());
+                sectionArray.add(sectionObject);
+
+                
         }
+        
         
         // Add all components to the main JSON object
         jsonMain.put("scheduletype", scheduleTypeMap);
         jsonMain.put("subject", subjectMap);
         jsonMain.put("course", courseMap);
-        jsonMain.put("section", sectionObject);
+        jsonMain.put("section", sectionArray);
         
         // Return serialized JSON string
         return Jsoner.serialize(jsonMain);
