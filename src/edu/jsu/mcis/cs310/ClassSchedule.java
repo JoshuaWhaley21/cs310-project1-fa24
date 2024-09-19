@@ -9,6 +9,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -32,94 +33,120 @@ public class ClassSchedule {
     private final String INSTRUCTOR_COL_HEADER = "instructor";
     private final String SUBJECTID_COL_HEADER = "subjectid";
     
+    private static final int crn_index = 0;
+    private static final int subject_index = 1;
+    private static final int num_index = 2;
+    private static final int description_index = 3;
+    private static final int section_index = 4;
+    private static final int type_index = 5;
+    private static final int credits_index = 6;
+    private static final int start_index = 7;
+    private static final int end_index = 8;
+    private static final int days_index = 9;
+    private static final int where_index = 10;
+    private static final int schedule_index = 11;
+    private static final int instructor_index = 12;
+    
+    
     public String convertCsvToJsonString(List<String[]> csv) {
-        
-        // Object Creation
+
+        // Initialize main JSON object
         JsonObject jsonMain = new JsonObject();
-        JsonArray array1 = new JsonArray();
         
-        // iterator initialization + skip header row
-        Iterator<String[]> iterator = csv.iterator();
-        if (iterator.hasNext()){
-            iterator.next();
+        // Json Headers objects
+        JsonObject headerData = new JsonObject();
+        
+        // Maps for scheduletype, subject, and course
+        JsonObject scheduleTypeMap = new JsonObject();  // For scheduletype (type: schedule)
+        JsonObject subjectMap = new JsonObject();       // For subject (first part of num -> subject name)
+        JsonObject courseMap = new JsonObject();        // For course details
+        
+        // Array for sections
+        JsonObject sectionObject = new JsonObject();
+        JsonArray instructorArray = new JsonArray();
+        
+        // Skip header and process each row
+        for (int i = 1; i < csv.size(); i++) {
+            String[] row = csv.get(i);
+            
+                String num = row[num_index]; // row 3
+                String description = row[description_index]; // row 4
+                String section = row[section_index]; // 5
+                String type = row[type_index]; // 6
+                String schedule = row[schedule_index]; // 12
+                String instructor = row[instructor_index];
+                int crn = Integer.parseInt(row[crn_index]);
+            
+                // Split subject and num
+                String[] subjectAndNum = num.trim().split(" ");
+                // 1stpart of num here
+                String subjectid = subjectAndNum[0];
+                // 2nd part here
+                String numValue = subjectAndNum[1];
+            
+                // Populate the subject map if not already done
+                if (!subjectMap.containsKey(subjectid)) {
+                subjectMap.put(subjectid.trim(), row[subject_index].trim());
+                }
+
+                // Populate the course map if not already done
+                if (!courseMap.containsKey(num)) {
+                    // creates new JsonObject
+                    JsonObject course = new JsonObject();
+                    // Puts 1st part of num
+                    course.put(SUBJECTID_COL_HEADER, subjectid.trim());
+                    // Puts 2nd part of num
+                    course.put(NUM_COL_HEADER, numValue.trim());
+                    // Puts Description
+                    course.put(DESCRIPTION_COL_HEADER, description.trim());
+                    // Puts Credits
+                    course.put(CREDITS_COL_HEADER, Integer.parseInt(row[credits_index]));
+                    
+                    courseMap.put(num, course);
+                }
+            
+                // Populate the schedule type map if not already done
+                if (!scheduleTypeMap.containsKey(type)) {
+                    // puts tyoe followed by schedule 
+                    scheduleTypeMap.put(type.trim(), schedule.trim());
+                }
+            
+            
+                // Create a section JSON object
+                if(!sectionObject.containsKey(crn)){
+                    
+                sectionObject.put(CRN_COL_HEADER, crn);
+                sectionObject.put(SUBJECTID_COL_HEADER, subjectid.trim());
+                sectionObject.put(NUM_COL_HEADER, numValue.trim());
+                sectionObject.put(SECTION_COL_HEADER, section.trim());
+                sectionObject.put(TYPE_COL_HEADER, type.trim());
+                sectionObject.put(START_COL_HEADER, row[start_index].trim());
+                sectionObject.put(END_COL_HEADER, row[end_index].trim());
+                sectionObject.put(DAYS_COL_HEADER, row[days_index].trim());
+                sectionObject.put(WHERE_COL_HEADER, row[where_index].trim());
+                
+                // contain instructor in individual crn/ section object
+                instructorArray.add(instructor);
+                sectionObject.put(INSTRUCTOR_COL_HEADER, instructorArray);
+                
+                }
         }
         
-        // Iterating through rest of the rows
-        while(iterator.hasNext()){
-            String[] row = iterator.next();
-            JsonObject portion = new JsonObject();
-            
-            try{
-            
-        portion.put("crn", row.length > 0 ? row[0] : "");
-        portion.put("subject", row.length > 1 ? row[1] : "");
-        portion.put("num", row.length > 2 ? row[2] : "");
-        portion.put("description", row.length > 3 ? row[3] : "");
-        portion.put("section", row.length > 4 ? row[4] : "");
-        portion.put("type", row.length > 5 ? row[5] : "");
-        portion.put("credits", row.length > 6 ? row[6] : "");
-        portion.put("start", row.length > 7 ? row[7] : "");
-        portion.put("end", row.length > 8 ? row[8] : "");
-        portion.put("days", row.length > 9 ? row[9] : "");
-        portion.put("where", row.length > 10 ? row[10] : "");
-        portion.put("schedule", row.length > 11 ? row[11] : "");
-        portion.put("instructor", row.length > 12 ? row[12] : "");
-        portion.put("subjectid", row.length > 13 ? row[13] : "");
-            
-            }
-            catch (Exception e ){
-                System.err.println("Processing Row Error: " + java.util.Arrays.toString(row));
-            }
-            
-            array1.add(portion);
-            
-        }
+        // Add all components to the main JSON object
+        jsonMain.put("scheduletype", scheduleTypeMap);
+        jsonMain.put("subject", subjectMap);
+        jsonMain.put("course", courseMap);
+        jsonMain.put("section", sectionObject);
         
-        jsonMain.put("section", array1);
-        
-        return Jsoner.serialize(jsonMain); // remove this!
+        // Return serialized JSON string
+        return Jsoner.serialize(jsonMain);
         
     }
     
+    
     public String convertJsonToCsvString(JsonObject json) {
-        
-        StringWriter Swriter1 = new StringWriter();
-        CSVWriter csvWriter = new CSVWriter(Swriter1, '\t', '"', '\\',"\n");
-        
-        // Headers
-        String[] headers = {"crn", "subject", "num", "description", "section"
-        , "type", "credits", "start", "end", "days", "where", "schedule", "instructor",
-        "subjectid"};
-        
-        csvWriter.writeNext(headers);
-        
-        // Iterating over the file
-        JsonArray portions = (JsonArray) json.get("section");
-        Iterator<Object> iterator = portions.iterator();
-        
-        while(iterator.hasNext()){
-            JsonObject portion = (JsonObject) iterator.next();
-            String[] row = new String[headers.length];
-            
-            row[0] = portion.get("crn") != null ? portion.get("crn").toString() : "";
-            row[1] = portion.get("subject") != null ? portion.get("subject").toString() : "";
-            row[2] = portion.get("description") != null ? portion.get("description").toString() : "";
-            row[3] = portion.get("section") != null ? portion.get("section").toString() : "";
-            row[4] = portion.get("type") != null ? portion.get("type").toString() : "";
-            row[5] = portion.get("credits") != null ? portion.get("credits").toString() : "";
-            row[6] = portion.get("start") != null ? portion.get("start").toString() : "";
-            row[7] = portion.get("end") != null ? portion.get("end").toString() : "";
-            row[8] = portion.get("days") != null ? portion.get("days").toString() : "";
-            row[9] = portion.get("where") != null ? portion.get("where").toString() : "";
-            row[10] = portion.get("schedule") != null ? portion.get("schedule").toString() : "";
-            row[11] = portion.get("instructor") != null ? portion.get("instructor").toString() : "";
-            row[12] = portion.get("subjectid") != null ? portion.get("subjectid").toString() : ""; 
-            // Handle missing 'subjectid'
-            
-            csvWriter.writeNext(row);
-        }
-
-        return Swriter1.toString(); // remove this!
+    
+        return ""; // remove this!
         
     }
     
