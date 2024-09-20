@@ -153,8 +153,20 @@ public class ClassSchedule {
     
     
     public String convertJsonToCsvString(JsonObject json) {
+        
+        StringWriter writer = new StringWriter();
+        CSVWriter csvWriter = new CSVWriter(writer, '\t', '"', '\\', "\n");
     
-        return ""; // remove this!
+        // Write CSV header
+        String[] header = {
+            CRN_COL_HEADER, SUBJECT_COL_HEADER, NUM_COL_HEADER, DESCRIPTION_COL_HEADER, 
+            SECTION_COL_HEADER, TYPE_COL_HEADER, CREDITS_COL_HEADER, START_COL_HEADER, 
+            END_COL_HEADER, DAYS_COL_HEADER, WHERE_COL_HEADER, SCHEDULE_COL_HEADER, 
+            INSTRUCTOR_COL_HEADER
+        };
+        
+        return ""; // remove this
+    
         
     }
     
