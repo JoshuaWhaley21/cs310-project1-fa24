@@ -129,9 +129,12 @@ public class ClassSchedule {
                 sectionObject.put(DAYS_COL_HEADER, row[days_index].trim());
                 sectionObject.put(WHERE_COL_HEADER, row[where_index].trim());
                 
-                instructorArray.add(instructor.split(","));
-                sectionObject.put(INSTRUCTOR_COL_HEADER, instructorArray);
-
+                JsonArray currentInstructorArray = new JsonArray();
+                String[] instructors = instructor.split(",");  // Split the instructors if multiple
+                for (String instr : instructors) {
+                    currentInstructorArray.add(instr.trim());  // Add each instructor to the array
+                }
+                sectionObject.put(INSTRUCTOR_COL_HEADER, currentInstructorArray);
                 
                 //sectionArray.add(INSTRUCTOR_COL_HEADER, instructor.trim());
                 sectionArray.add(sectionObject);
@@ -165,7 +168,61 @@ public class ClassSchedule {
             INSTRUCTOR_COL_HEADER
         };
         
-        return ""; // remove this
+        // write the headers
+        csvWriter.writeNext(header);
+        
+        // Extract the main sections array from the JSON
+    JsonArray sectionArray = (JsonArray) json.get("section");
+    JsonObject subjectObject = (JsonObject) json.get("subject");
+    JsonObject courseMap = (JsonObject) json.get("course");
+    JsonObject scheduleTypeMap = (JsonObject) json.get("scheduletype");
+
+    
+    for (Object o : sectionArray) {
+        JsonObject section = (JsonObject) o;
+        
+        // Extract relevant data from each section
+        // Must also check for null value to avoid null value error
+        String crn = (section.get(CRN_COL_HEADER) != null) ? section.get(CRN_COL_HEADER).toString():"";
+
+        String subjectAbbreviation = (section.get(SUBJECTID_COL_HEADER) != null) ? section.get(SUBJECTID_COL_HEADER).toString() : "";
+        String fullSubject = (subjectAbbreviation.isEmpty() || !subjectObject.containsKey(subjectAbbreviation)) 
+            ? "" 
+            : subjectObject.get(subjectAbbreviation).toString();  // Full subject name like "Accounting"
+        
+        String courseID = (section.get(NUM_COL_HEADER) != null) ? section.get(NUM_COL_HEADER).toString() : "";
+        String num = subjectAbbreviation + " " + courseID;  // Combine full subject and num, e.g., "ACC 200"
+        
+        JsonObject course = (JsonObject) courseMap.get(num);
+        String description = (course != null && course.get(DESCRIPTION_COL_HEADER) != null) ? course.get(DESCRIPTION_COL_HEADER).toString():"";
+        String sectionNum = (section.get(SECTION_COL_HEADER) != null) ? section.get(SECTION_COL_HEADER).toString():"";
+        String type = (section.get(TYPE_COL_HEADER) != null) ? section.get(TYPE_COL_HEADER).toString():"";
+        String credits = (course != null && course.get(CREDITS_COL_HEADER) != null) ? course.get(CREDITS_COL_HEADER).toString():""; // Convert to string
+        String start = (section.get(START_COL_HEADER) != null) ? section.get(START_COL_HEADER).toString():"";
+        String end = (section.get(END_COL_HEADER) != null) ? section.get(END_COL_HEADER).toString():"";
+        String days = (section.get(DAYS_COL_HEADER) != null) ? section.get(DAYS_COL_HEADER).toString():"";
+        String location = (section.get(WHERE_COL_HEADER) != null) ? section.get(WHERE_COL_HEADER).toString():"";
+        String schedule = (scheduleTypeMap.get(type) != null) ? scheduleTypeMap.get(type).toString():"";
+        
+        
+        String instructor = (section.get(INSTRUCTOR_COL_HEADER) != null) ? section.get(INSTRUCTOR_COL_HEADER).toString():"";
+        
+        // Create a CSV row with the extracted data
+        String[] row = { crn, fullSubject, num, description, sectionNum, type, credits, start, end, days, location, schedule, instructor };
+        
+        // Write the row to the CSV
+        csvWriter.writeNext(row);
+    }
+
+    // Close the writer
+    try {
+        csvWriter.close();
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    // Return the CSV string from the StringWriter
+    return writer.toString();
     
         
     }
